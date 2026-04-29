@@ -191,7 +191,7 @@ export default function App() {
 
             {/* Second row - Content Pipeline and Experiment Performance */}
             <div className="grid gap-4 lg:grid-cols-2">
-              <ContentPipeline />
+              <ContentPipeline onViewContentReview={() => setActiveView("content-review")} />
               <ExperimentPerformance />
             </div>
 

@@ -4,47 +4,46 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { FormField, getMediaFormById } from "../utils/mediaFormsData";
 
 interface FormEditorProps {
   formId: string;
   onClose: () => void;
 }
 
-interface FormField {
-  id: string;
-  type: string;
-  label: string;
-  required: boolean;
-  locked?: boolean;
-  enabled?: boolean;
-}
-
 export function FormEditor({ formId, onClose }: FormEditorProps) {
+  const selectedForm = formId === "new" ? null : getMediaFormById(formId);
+
   const [formName, setFormName] = useState(
-    formId === "new" ? "Untitled Form" : "Spring 2025 Campus Photo Drive"
+    selectedForm?.name ?? "Untitled Form"
   );
-  const [status, setStatus] = useState<"draft" | "active" | "closed">("draft");
+  const [status, setStatus] = useState<"draft" | "active" | "closed">(selectedForm?.status ?? "draft");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
-  const [selectedSite, setSelectedSite] = useState("COE Main");
-  const [urlSlug, setUrlSlug] = useState("campus-photos");
-  const [maxFileSize, setMaxFileSize] = useState(10);
-  const [maxFiles, setMaxFiles] = useState(10);
-  const [acceptedTypes, setAcceptedTypes] = useState(["JPG", "PNG", "GIF", "MP4"]);
-  const [successMessage, setSuccessMessage] = useState("Thank you for your submission!");
-  const [notificationEmail, setNotificationEmail] = useState("");
-  const [autoReply, setAutoReply] = useState(false);
-  const [heroImageUrl, setHeroImageUrl] = useState("");
-  const [formDescription, setFormDescription] = useState("Submit your photos for the chance to be featured on the @uf_coe Instagram and other social channels.");
+  const [selectedSite, setSelectedSite] = useState(selectedForm?.site ?? "COE Main");
+  const [urlSlug, setUrlSlug] = useState(selectedForm?.slug ?? "new-form");
+  const [maxFileSize, setMaxFileSize] = useState(selectedForm?.maxSize ?? 10);
+  const [maxFiles, setMaxFiles] = useState(selectedForm?.maxFiles ?? 10);
+  const [acceptedTypes, setAcceptedTypes] = useState(selectedForm?.acceptedTypes ?? ["JPG", "PNG", "GIF", "MP4"]);
+  const [successMessage, setSuccessMessage] = useState(selectedForm?.successMessage ?? "Thank you for your submission!");
+  const [notificationEmail, setNotificationEmail] = useState(selectedForm?.notificationEmail ?? "");
+  const [autoReply, setAutoReply] = useState(selectedForm?.autoReply ?? false);
+  const [heroImageUrl, setHeroImageUrl] = useState(selectedForm?.heroImageUrl ?? "");
+  const [formDescription, setFormDescription] = useState(
+    selectedForm?.formDescription ??
+      "Submit your photos for the chance to be featured on the @uf_coe Instagram and other social channels."
+  );
 
   const [fields, setFields] = useState<FormField[]>([
-    { id: "1", type: "text", label: "Submitter Name", required: true, locked: true },
-    { id: "2", type: "email", label: "Submitter Email", required: true, locked: true },
-    { id: "3", type: "text", label: "Title / Caption", required: false, enabled: true },
-    { id: "4", type: "textarea", label: "Description", required: false, enabled: true },
-    { id: "5", type: "select", label: "Category", required: false, enabled: true },
-    { id: "6", type: "text", label: "Department / School", required: false, enabled: false },
-    { id: "7", type: "date", label: "Date of Media", required: false, enabled: false },
-    { id: "8", type: "checkbox", label: "Usage Rights Agreement", required: false, enabled: false },
+    ...(selectedForm?.fields ?? [
+      { id: "1", type: "text", label: "Submitter Name", required: true, locked: true, enabled: true },
+      { id: "2", type: "email", label: "Submitter Email", required: true, locked: true, enabled: true },
+      { id: "3", type: "text", label: "Title / Caption", required: false, enabled: true },
+      { id: "4", type: "textarea", label: "Description", required: false, enabled: true },
+      { id: "5", type: "select", label: "Category", required: false, enabled: true },
+      { id: "6", type: "text", label: "Department / School", required: false, enabled: false },
+      { id: "7", type: "date", label: "Date of Media", required: false, enabled: false },
+      { id: "8", type: "checkbox", label: "Usage Rights Agreement", required: false, enabled: false },
+    ]),
   ]);
 
   const fileTypes = ["JPG", "PNG", "GIF", "MP4", "MOV", "AVI"];
@@ -63,6 +62,14 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
         f.id === fieldId && !f.locked ? { ...f, enabled: !f.enabled } : f
       )
     );
+  };
+
+  const updateFieldLabel = (fieldId: string, value: string) => {
+    setFields(fields.map((f) => (f.id === fieldId ? { ...f, label: value } : f)));
+  };
+
+  const toggleRequired = (fieldId: string) => {
+    setFields(fields.map((f) => (f.id === fieldId ? { ...f, required: !f.required } : f)));
   };
 
   const statusConfig = {
@@ -137,12 +144,22 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
                   ) : (
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
                   )}
-                  <span className="flex-1 text-sm">{field.label}</span>
-                  {field.required && (
-                    <Badge variant="secondary" className="text-xs">
-                      Required
-                    </Badge>
-                  )}
+                  <Input
+                    value={field.label}
+                    onChange={(e) => updateFieldLabel(field.id, e.target.value)}
+                    className="h-8 flex-1 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleRequired(field.id)}
+                    className={`text-xs px-2 py-1 rounded border ${
+                      field.required
+                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                        : "bg-gray-100 text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    Required
+                  </button>
                   {!field.locked && (
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input

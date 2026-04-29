@@ -2,62 +2,11 @@ import { Plus, Copy, ExternalLink, Edit, Eye, Files, Archive, Trash2 } from "luc
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ActionMenu } from "./ActionMenu";
+import { mediaForms } from "../utils/mediaFormsData";
 
 interface FormsListProps {
   onEditForm: (id: string) => void;
 }
-
-interface MediaForm {
-  id: string;
-  name: string;
-  slug: string;
-  status: "active" | "draft" | "closed";
-  site: string;
-  submissionCount: number;
-  lastSubmission: string;
-  fieldCount: number;
-  fileTypes: string[];
-  maxSize: string;
-}
-
-const mockForms: MediaForm[] = [
-  {
-    id: "1",
-    name: "Spring 2025 Campus Photo Drive",
-    slug: "campus-photos",
-    status: "active",
-    site: "COE Main",
-    submissionCount: 156,
-    lastSubmission: "2 hours ago",
-    fieldCount: 6,
-    fileTypes: ["Images", "Video"],
-    maxSize: "10MB",
-  },
-  {
-    id: "2",
-    name: "Faculty Research Highlights",
-    slug: "research-highlights",
-    status: "active",
-    site: "Research Portal",
-    submissionCount: 43,
-    lastSubmission: "1 day ago",
-    fieldCount: 5,
-    fileTypes: ["Images"],
-    maxSize: "10MB",
-  },
-  {
-    id: "3",
-    name: "Alumni Event Photos",
-    slug: "alumni-events",
-    status: "draft",
-    site: "Alumni Portal",
-    submissionCount: 0,
-    lastSubmission: "Never",
-    fieldCount: 4,
-    fileTypes: ["Images", "Video"],
-    maxSize: "25MB",
-  },
-];
 
 const statusConfig = {
   active: { label: "Active", className: "bg-green-100 text-green-700 border-green-200" },
@@ -66,7 +15,7 @@ const statusConfig = {
 };
 
 export function FormsList({ onEditForm }: FormsListProps) {
-  if (mockForms.length === 0) {
+  if (mediaForms.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -87,7 +36,7 @@ export function FormsList({ onEditForm }: FormsListProps) {
 
   return (
     <div className="space-y-4">
-      {mockForms.map((form) => (
+      {mediaForms.map((form) => (
         <div key={form.id} className="bg-white border rounded-lg p-6 hover:shadow-md transition-shadow">
           <div className="flex items-start gap-6">
             {/* Left Section */}
@@ -117,8 +66,20 @@ export function FormsList({ onEditForm }: FormsListProps) {
               <p className="text-sm text-muted-foreground">submissions</p>
               <p className="text-xs text-muted-foreground">Last: {form.lastSubmission}</p>
               <p className="text-xs text-muted-foreground">
-                {form.fieldCount} fields · {form.fileTypes.join(" + ")} · {form.maxSize} max
+                {form.fields.filter((field) => field.enabled !== false).length} fields ·{" "}
+                {form.acceptedTypes.includes("MP4") || form.acceptedTypes.includes("MOV") ? "Images + Video" : "Images"} ·{" "}
+                {form.maxSize}MB max
               </p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {form.fields
+                  .filter((field) => field.enabled !== false)
+                  .slice(0, 4)
+                  .map((field) => (
+                    <Badge key={field.id} variant="secondary" className="text-xs font-normal">
+                      {field.label}
+                    </Badge>
+                  ))}
+              </div>
             </div>
 
             {/* Right Section */}
