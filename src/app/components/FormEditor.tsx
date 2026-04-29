@@ -37,7 +37,7 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
     selectedForm?.formDescription ??
       "Submit your photos for the chance to be featured on the @uf_coe Instagram and other social channels."
   );
-  const [status, setStatus] = useState<"draft" | "active" | "closed">(selectedForm?.status ?? "draft");
+  const [formCategory, setFormCategory] = useState<string[]>([]);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [selectedSite, setSelectedSite] = useState(selectedForm?.site ?? "COE Main");
   const [urlSlug, setUrlSlug] = useState(selectedForm?.slug ?? "new-form");
@@ -58,7 +58,6 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
       { id: "2", type: "email", label: "Submitter Email", required: true, locked: true, enabled: true },
       { id: "3", type: "text", label: "Title / Caption", required: false, enabled: true },
       { id: "4", type: "textarea", label: "Description", required: false, enabled: true },
-      { id: "5", type: "select", label: "Category", required: false, enabled: true, options: ["Research Events", "Faculty Resources", "Student Life", "Alumni Relations", "Campus Life"] },
       { id: "6", type: "text", label: "Department / School", required: false, enabled: false },
       { id: "7", type: "date", label: "Date of Media", required: false, enabled: false },
       { id: "8", type: "checkbox", label: "Usage Rights Agreement", required: false, enabled: false },
@@ -111,10 +110,19 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
     ));
   };
 
-  const statusConfig = {
-    draft: { label: "Draft", className: "bg-gray-100 text-gray-700" },
-    active: { label: "Active", className: "bg-green-100 text-green-700" },
-    closed: { label: "Closed", className: "bg-red-100 text-red-700" },
+  const INTERNAL_CATEGORIES = [
+    "Social Media",
+    "Research",
+    "Faculty Resources",
+    "Student Life",
+    "Alumni Relations",
+    "Campus Events",
+  ];
+
+  const toggleCategory = (cat: string) => {
+    setFormCategory((prev: string[]) =>
+      prev.includes(cat) ? prev.filter((c: string) => c !== cat) : [...prev, cat]
+    );
   };
 
   return (
@@ -201,21 +209,23 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
                   />
                 </div>
 
-                {/* Status */}
+                {/* Internal Category */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Status</label>
-                  <div className="flex gap-2">
-                    {(["draft", "active", "closed"] as const).map((s) => (
+                  <label className="text-sm font-medium mb-1 block">Category</label>
+                  <p className="text-xs text-muted-foreground mb-2">Internal tag — not shown on the public form</p>
+                  <div className="flex flex-wrap gap-2">
+                    {INTERNAL_CATEGORIES.map((cat) => (
                       <button
-                        key={s}
-                        onClick={() => setStatus(s)}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                          status === s
-                            ? statusConfig[s].className
-                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        key={cat}
+                        type="button"
+                        onClick={() => toggleCategory(cat)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                          formCategory.includes(cat)
+                            ? "bg-[#003087] text-white"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                       >
-                        {statusConfig[s].label}
+                        {cat}
                       </button>
                     ))}
                   </div>
