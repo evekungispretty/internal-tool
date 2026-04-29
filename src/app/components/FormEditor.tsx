@@ -459,7 +459,7 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
                   <select className="w-full border rounded-md px-3 py-2">
                     <option>System Default</option>
                     <option>Georgia</option>
-                    <option>Inter</option>
+                    <option>Lato</option>
                     <option>Custom Google Font</option>
                   </select>
                 </div>
