@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { X, GripVertical, Lock, Plus, Eye, Monitor, Smartphone, ChevronDown } from "lucide-react";
+import { X, GripVertical, Lock, Plus, Eye, Monitor, Smartphone } from "lucide-react";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { FormField, getMediaFormById } from "../utils/mediaFormsData";
@@ -11,11 +10,32 @@ interface FormEditorProps {
   onClose: () => void;
 }
 
+const STEPS = ["Form Setup", "Appearance", "Publishing"];
+
+const COLOR_PRESETS = [
+  { label: "UF Blue", value: "#003087" },
+  { label: "Navy", value: "#001F5B" },
+  { label: "Dark Teal", value: "#005F73" },
+  { label: "Slate", value: "#334155" },
+  { label: "Black", value: "#0F172A" },
+];
+
+const HEADING_COLOR_PRESETS = [
+  { label: "UF Gold", value: "#FFD700" },
+  { label: "White", value: "#FFFFFF" },
+  { label: "Cream", value: "#FFF8E7" },
+  { label: "Light Blue", value: "#BAE6FD" },
+  { label: "Amber", value: "#FCD34D" },
+];
+
 export function FormEditor({ formId, onClose }: FormEditorProps) {
   const selectedForm = formId === "new" ? null : getMediaFormById(formId);
 
-  const [formName, setFormName] = useState(
-    selectedForm?.name ?? "Untitled Form"
+  const [step, setStep] = useState(0);
+  const [formName, setFormName] = useState(selectedForm?.name ?? "Untitled Form");
+  const [formDescription, setFormDescription] = useState(
+    selectedForm?.formDescription ??
+      "Submit your photos for the chance to be featured on the @uf_coe Instagram and other social channels."
   );
   const [status, setStatus] = useState<"draft" | "active" | "closed">(selectedForm?.status ?? "draft");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
@@ -28,10 +48,9 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
   const [notificationEmail, setNotificationEmail] = useState(selectedForm?.notificationEmail ?? "");
   const [autoReply, setAutoReply] = useState(selectedForm?.autoReply ?? false);
   const [heroImageUrl, setHeroImageUrl] = useState(selectedForm?.heroImageUrl ?? "");
-  const [formDescription, setFormDescription] = useState(
-    selectedForm?.formDescription ??
-      "Submit your photos for the chance to be featured on the @uf_coe Instagram and other social channels."
-  );
+  const [primaryColor, setPrimaryColor] = useState("#003087");
+  const [headingColor, setHeadingColor] = useState("#FFD700");
+  const [font, setFont] = useState("System Default");
 
   const [fields, setFields] = useState<FormField[]>([
     ...(selectedForm?.fields ?? [
@@ -49,19 +68,15 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
   const fileTypes = ["JPG", "PNG", "GIF", "MP4", "MOV", "AVI"];
 
   const toggleFileType = (type: string) => {
-    if (acceptedTypes.includes(type)) {
-      setAcceptedTypes(acceptedTypes.filter((t) => t !== type));
-    } else {
-      setAcceptedTypes([...acceptedTypes, type]);
-    }
+    setAcceptedTypes(
+      acceptedTypes.includes(type)
+        ? acceptedTypes.filter((t) => t !== type)
+        : [...acceptedTypes, type]
+    );
   };
 
   const toggleField = (fieldId: string) => {
-    setFields(
-      fields.map((f) =>
-        f.id === fieldId && !f.locked ? { ...f, enabled: !f.enabled } : f
-      )
-    );
+    setFields(fields.map((f) => (f.id === fieldId && !f.locked ? { ...f, enabled: !f.enabled } : f)));
   };
 
   const updateFieldLabel = (fieldId: string, value: string) => {
@@ -78,6 +93,10 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
     closed: { label: "Closed", className: "bg-red-100 text-red-700" },
   };
 
+  const headerBg = heroImageUrl
+    ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${heroImageUrl})`
+    : `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`;
+
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
       {/* Top Bar */}
@@ -90,260 +109,441 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost">Save Draft</Button>
-          <Button className="bg-[#003087] hover:bg-[#002866]">Publish Form</Button>
+          {step === STEPS.length - 1 && (
+            <Button className="bg-[#003087] hover:bg-[#002866]">Publish Form</Button>
+          )}
         </div>
       </div>
 
       {/* Split Panel */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Form Builder */}
-        <div className="w-[40%] border-r overflow-y-auto p-6 space-y-6">
-          {/* Form Name */}
-          <div>
-            <input
-              type="text"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              className="text-2xl font-bold w-full border-none outline-none focus:ring-0 p-0"
-            />
-          </div>
-
-          {/* Status Toggle */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Status</label>
-            <div className="flex gap-2">
-              {(["draft", "active", "closed"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatus(s)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    status === s
-                      ? statusConfig[s].className
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                  }`}
-                >
-                  {statusConfig[s].label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Form Fields */}
-          <div>
-            <h3 className="font-semibold mb-3">Form Fields</h3>
-            <div className="space-y-2">
-              {fields.map((field) => (
-                <div
-                  key={field.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border ${
-                    field.enabled !== false ? "bg-white" : "bg-gray-50 opacity-60"
-                  }`}
-                >
-                  {field.locked ? (
-                    <Lock className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-                  )}
-                  <Input
-                    value={field.label}
-                    onChange={(e) => updateFieldLabel(field.id, e.target.value)}
-                    className="h-8 flex-1 text-sm"
-                  />
+        {/* Left Panel */}
+        <div className="w-[40%] border-r flex flex-col overflow-hidden">
+          {/* Step Indicator */}
+          <div className="px-6 pt-5 pb-4 border-b bg-gray-50">
+            <div className="flex items-center gap-0">
+              {STEPS.map((label, i) => (
+                <div key={i} className="flex items-center flex-1 last:flex-none">
                   <button
-                    type="button"
-                    onClick={() => toggleRequired(field.id)}
-                    className={`text-xs px-2 py-1 rounded border ${
-                      field.required
-                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                        : "bg-gray-100 text-gray-600 border-gray-200"
-                    }`}
+                    onClick={() => setStep(i)}
+                    className="flex items-center gap-2 group"
                   >
-                    Required
-                  </button>
-                  {!field.locked && (
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={field.enabled}
-                        onChange={() => toggleField(field.id)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#003087]"></div>
-                    </label>
-                  )}
-                </div>
-              ))}
-            </div>
-            <button className="text-sm text-[#003087] hover:underline mt-3 flex items-center gap-1">
-              <Plus className="h-4 w-4" />
-              Add Custom Field
-            </button>
-          </div>
-
-          {/* File Upload Settings */}
-          <div>
-            <h3 className="font-semibold mb-3">File Upload Settings</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Accepted Types</label>
-                <div className="flex flex-wrap gap-2">
-                  {fileTypes.map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => toggleFileType(type)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                        acceptedTypes.includes(type)
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
+                        i === step
                           ? "bg-[#003087] text-white"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          : i < step
+                          ? "bg-[#003087]/20 text-[#003087]"
+                          : "bg-gray-200 text-gray-500"
                       }`}
                     >
-                      {type}
-                    </button>
-                  ))}
+                      {i + 1}
+                    </div>
+                    <span
+                      className={`text-sm font-medium transition-colors ${
+                        i === step ? "text-[#003087]" : i < step ? "text-[#003087]/70" : "text-gray-400"
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  </button>
+                  {i < STEPS.length - 1 && (
+                    <div
+                      className={`flex-1 h-px mx-3 transition-colors ${
+                        i < step ? "bg-[#003087]/40" : "bg-gray-200"
+                      }`}
+                    />
+                  )}
                 </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Max File Size: {maxFileSize}MB
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="50"
-                  value={maxFileSize}
-                  onChange={(e) => setMaxFileSize(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#003087]"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Max Files per Submission</label>
-                <input
-                  type="number"
-                  value={maxFiles}
-                  onChange={(e) => setMaxFiles(parseInt(e.target.value))}
-                  className="w-full border rounded-md px-3 py-2"
-                />
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Form Appearance */}
-          <div>
-            <h3 className="font-semibold mb-3">Form Appearance</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Hero Image URL</label>
-                <Input
-                  type="url"
-                  placeholder="https://example.com/image.jpg"
-                  value={heroImageUrl}
-                  onChange={(e) => setHeroImageUrl(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Background image for the form header
-                </p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Form Description</label>
-                <Textarea
-                  placeholder="Brief description or instructions for submitters..."
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  className="min-h-[80px]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Form Behavior */}
-          <div>
-            <h3 className="font-semibold mb-3">Form Behavior</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Success Message</label>
-                <textarea
-                  value={successMessage}
-                  onChange={(e) => setSuccessMessage(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 min-h-[80px]"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Notification Email</label>
-                <input
-                  type="email"
-                  value={notificationEmail}
-                  onChange={(e) => setNotificationEmail(e.target.value)}
-                  placeholder="admin@education.ufl.edu"
-                  className="w-full border rounded-md px-3 py-2"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Auto-reply to Submitter</label>
-                <label className="relative inline-flex items-center cursor-pointer">
+          {/* Step Content */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* ── Step 1: Form Setup ── */}
+            {step === 0 && (
+              <>
+                {/* Form Name */}
+                <div className="space-y-2">
                   <input
-                    type="checkbox"
-                    checked={autoReply}
-                    onChange={(e) => setAutoReply(e.target.checked)}
-                    className="sr-only peer"
+                    type="text"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className="text-2xl font-bold w-full border-none outline-none focus:ring-0 p-0"
                   />
-                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#003087]"></div>
-                </label>
-              </div>
-            </div>
+                  {/* Form Description directly below title */}
+                  <Textarea
+                    placeholder="Brief description or instructions for submitters..."
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    className="min-h-[72px] text-sm text-muted-foreground resize-none border-dashed"
+                  />
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Status</label>
+                  <div className="flex gap-2">
+                    {(["draft", "active", "closed"] as const).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setStatus(s)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          status === s
+                            ? statusConfig[s].className
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        }`}
+                      >
+                        {statusConfig[s].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Form Fields */}
+                <div>
+                  <h3 className="font-semibold mb-3">Form Fields</h3>
+                  <div className="space-y-2">
+                    {fields.map((field) => (
+                      <div
+                        key={field.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg border ${
+                          field.enabled !== false ? "bg-white" : "bg-gray-50 opacity-60"
+                        }`}
+                      >
+                        {field.locked ? (
+                          <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        ) : (
+                          <GripVertical className="h-4 w-4 text-muted-foreground cursor-move flex-shrink-0" />
+                        )}
+                        <Input
+                          value={field.label}
+                          onChange={(e) => updateFieldLabel(field.id, e.target.value)}
+                          className="h-8 flex-1 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleRequired(field.id)}
+                          className={`text-xs px-2 py-1 rounded border flex-shrink-0 ${
+                            field.required
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : "bg-gray-100 text-gray-600 border-gray-200"
+                          }`}
+                        >
+                          Req
+                        </button>
+                        {!field.locked && (
+                          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={field.enabled}
+                              onChange={() => toggleField(field.id)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#003087]" />
+                          </label>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button className="text-sm text-[#003087] hover:underline mt-3 flex items-center gap-1">
+                    <Plus className="h-4 w-4" />
+                    Add Custom Field
+                  </button>
+                </div>
+
+                {/* File Upload Settings */}
+                <div>
+                  <h3 className="font-semibold mb-3">File Upload Settings</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Accepted Types</label>
+                      <div className="flex flex-wrap gap-2">
+                        {fileTypes.map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => toggleFileType(type)}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                              acceptedTypes.includes(type)
+                                ? "bg-[#003087] text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Max File Size: {maxFileSize}MB
+                      </label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="50"
+                        value={maxFileSize}
+                        onChange={(e) => setMaxFileSize(parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#003087]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Max Files per Submission</label>
+                      <input
+                        type="number"
+                        value={maxFiles}
+                        onChange={(e) => setMaxFiles(parseInt(e.target.value))}
+                        className="w-full border rounded-md px-3 py-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── Step 2: Appearance ── */}
+            {step === 1 && (
+              <>
+                <div>
+                  <h3 className="font-semibold mb-1">Form Appearance</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Customize the look of your public form.
+                  </p>
+
+                  <div className="space-y-6">
+                    {/* Hero Image */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Hero Image URL</label>
+                      <Input
+                        type="url"
+                        placeholder="https://example.com/image.jpg"
+                        value={heroImageUrl}
+                        onChange={(e) => setHeroImageUrl(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Background image for the form header
+                      </p>
+                    </div>
+
+                    {/* Primary / Background Color */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Header Background Color
+                      </label>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Used when no hero image is set
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {COLOR_PRESETS.map((preset) => (
+                          <button
+                            key={preset.value}
+                            title={preset.label}
+                            onClick={() => setPrimaryColor(preset.value)}
+                            className={`w-8 h-8 rounded-full border-2 transition-all ${
+                              primaryColor === preset.value
+                                ? "border-[#003087] scale-110 shadow-md"
+                                : "border-transparent hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: preset.value }}
+                          />
+                        ))}
+                        <div className="relative">
+                          <div
+                            className={`w-8 h-8 rounded-full border-2 overflow-hidden cursor-pointer ${
+                              !COLOR_PRESETS.find((p) => p.value === primaryColor)
+                                ? "border-[#003087] scale-110 shadow-md"
+                                : "border-gray-300"
+                            }`}
+                            style={{ backgroundColor: primaryColor }}
+                          >
+                            <input
+                              type="color"
+                              value={primaryColor}
+                              onChange={(e) => setPrimaryColor(e.target.value)}
+                              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded border" style={{ backgroundColor: primaryColor }} />
+                        <code className="text-xs text-muted-foreground">{primaryColor.toUpperCase()}</code>
+                      </div>
+                    </div>
+
+                    {/* Heading Color */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Heading Color</label>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Color of the form title in the header
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {HEADING_COLOR_PRESETS.map((preset) => (
+                          <button
+                            key={preset.value}
+                            title={preset.label}
+                            onClick={() => setHeadingColor(preset.value)}
+                            className={`w-8 h-8 rounded-full border-2 transition-all ${
+                              headingColor === preset.value
+                                ? "border-[#003087] scale-110 shadow-md"
+                                : "border-gray-200 hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: preset.value }}
+                          />
+                        ))}
+                        <div className="relative">
+                          <div
+                            className={`w-8 h-8 rounded-full border-2 overflow-hidden cursor-pointer ${
+                              !HEADING_COLOR_PRESETS.find((p) => p.value === headingColor)
+                                ? "border-[#003087] scale-110 shadow-md"
+                                : "border-gray-300"
+                            }`}
+                            style={{ backgroundColor: headingColor }}
+                          >
+                            <input
+                              type="color"
+                              value={headingColor}
+                              onChange={(e) => setHeadingColor(e.target.value)}
+                              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded border" style={{ backgroundColor: headingColor }} />
+                        <code className="text-xs text-muted-foreground">{headingColor.toUpperCase()}</code>
+                      </div>
+                    </div>
+
+                    {/* Font */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Font</label>
+                      <select
+                        value={font}
+                        onChange={(e) => setFont(e.target.value)}
+                        className="w-full border rounded-md px-3 py-2"
+                      >
+                        <option>System Default</option>
+                        <option>Georgia</option>
+                        <option>Lato</option>
+                        <option>Custom Google Font</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── Step 3: Publishing ── */}
+            {step === 2 && (
+              <>
+                {/* Form Behavior */}
+                <div>
+                  <h3 className="font-semibold mb-3">Form Behavior</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Success Message</label>
+                      <textarea
+                        value={successMessage}
+                        onChange={(e) => setSuccessMessage(e.target.value)}
+                        className="w-full border rounded-md px-3 py-2 min-h-[80px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Notification Email</label>
+                      <input
+                        type="email"
+                        value={notificationEmail}
+                        onChange={(e) => setNotificationEmail(e.target.value)}
+                        placeholder="admin@education.ufl.edu"
+                        className="w-full border rounded-md px-3 py-2"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">Auto-reply to Submitter</label>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={autoReply}
+                          onChange={(e) => setAutoReply(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#003087]" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Publishing */}
+                <div>
+                  <h3 className="font-semibold mb-3">Publishing</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Published to Site</label>
+                      <select
+                        value={selectedSite}
+                        onChange={(e) => setSelectedSite(e.target.value)}
+                        className="w-full border rounded-md px-3 py-2"
+                      >
+                        <option>COE Main</option>
+                        <option>Research Portal</option>
+                        <option>Alumni Portal</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">URL Slug</label>
+                      <input
+                        type="text"
+                        value={urlSlug}
+                        onChange={(e) => setUrlSlug(e.target.value)}
+                        className="w-full border rounded-md px-3 py-2"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        education.ufl.edu/submit/{urlSlug}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Embed Shortcode</label>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-sm bg-gray-100 px-3 py-2 rounded">
+                          [media_upload_form id="{formId}"]
+                        </code>
+                        <Button variant="ghost" size="sm">Copy</Button>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="w-full">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Live Form
+                    </Button>
+                    <Button className="w-full bg-[#003087] hover:bg-[#002866]">
+                      Publish Form
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Publishing */}
-          <div>
-            <h3 className="font-semibold mb-3">Publishing</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Published to Site</label>
-                <select
-                  value={selectedSite}
-                  onChange={(e) => setSelectedSite(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2"
-                >
-                  <option>COE Main</option>
-                  <option>Research Portal</option>
-                  <option>Alumni Portal</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">URL Slug</label>
-                <input
-                  type="text"
-                  value={urlSlug}
-                  onChange={(e) => setUrlSlug(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  education.ufl.edu/submit/{urlSlug}
-                </p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Embed Shortcode</label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-sm bg-gray-100 px-3 py-2 rounded">
-                    [media_upload_form id="{formId}"]
-                  </code>
-                  <Button variant="ghost" size="sm">
-                    Copy
-                  </Button>
-                </div>
-              </div>
-
-              <Button variant="outline" className="w-full">
-                <Eye className="h-4 w-4 mr-2" />
-                View Live Form
+          {/* Step Navigation */}
+          <div className="border-t px-6 py-4 flex items-center justify-between bg-white">
+            <Button
+              variant="ghost"
+              onClick={() => setStep((s) => s - 1)}
+              disabled={step === 0}
+            >
+              Back
+            </Button>
+            {step < STEPS.length - 1 ? (
+              <Button
+                className="bg-[#003087] hover:bg-[#002866]"
+                onClick={() => setStep((s) => s + 1)}
+              >
+                Next: {STEPS[step + 1]}
               </Button>
-            </div>
+            ) : (
+              <span className="text-sm text-muted-foreground">Last step</span>
+            )}
           </div>
         </div>
 
@@ -376,30 +576,32 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
                 previewMode === "mobile" ? "max-w-md" : "max-w-3xl"
               }`}
             >
-              {/* Preview Header with Hero Image */}
+              {/* Header */}
               <div
                 className="relative text-white p-8 min-h-[200px] flex flex-col justify-center"
                 style={{
                   backgroundImage: heroImageUrl
-                    ? `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${heroImageUrl})`
-                    : "linear-gradient(135deg, #003087 0%, #0047AB 100%)",
+                    ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${heroImageUrl})`
+                    : `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
               >
-                <h1 className="text-3xl font-bold mb-3" style={{ color: "#FFD700" }}>
+                <h1
+                  className="text-3xl font-bold mb-3"
+                  style={{ color: headingColor }}
+                >
                   {formName}
                 </h1>
                 {formDescription && (
-                  <p className="text-white text-sm max-w-2xl leading-relaxed">
+                  <p className="text-white/90 text-sm max-w-2xl leading-relaxed">
                     {formDescription}
                   </p>
                 )}
               </div>
 
-              {/* Preview Form */}
+              {/* Form Fields Preview */}
               <div className="p-6 space-y-4 bg-gray-50">
-
                 {fields
                   .filter((f) => f.enabled !== false)
                   .map((field) => (
@@ -409,14 +611,14 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
                         {field.required && <span className="text-red-500 ml-1">*</span>}
                       </label>
                       {field.type === "textarea" ? (
-                        <textarea className="w-full border rounded-md px-3 py-2 min-h-[80px] bg-white" />
+                        <textarea className="w-full border rounded-md px-3 py-2 min-h-[80px] bg-white" readOnly />
                       ) : field.type === "select" ? (
-                        <select className="w-full border rounded-md px-3 py-2 bg-white">
+                        <select className="w-full border rounded-md px-3 py-2 bg-white" disabled>
                           <option>Select an option</option>
                         </select>
                       ) : field.type === "checkbox" ? (
                         <div className="flex items-start gap-2">
-                          <input type="checkbox" className="mt-1" />
+                          <input type="checkbox" className="mt-1" readOnly />
                           <span className="text-sm text-muted-foreground">
                             I agree to grant usage rights for submitted media
                           </span>
@@ -425,6 +627,7 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
                         <input
                           type={field.type}
                           className="w-full border rounded-md px-3 py-2 bg-white"
+                          readOnly
                         />
                       )}
                     </div>
@@ -439,49 +642,22 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
                     <div className="space-y-2">
                       <div className="text-4xl">📁</div>
                       <p className="font-medium">Drag and drop files here</p>
-                      <p className="text-sm text-muted-foreground">
-                        or click to browse
-                      </p>
+                      <p className="text-sm text-muted-foreground">or click to browse</p>
                       <p className="text-xs text-muted-foreground">
-                        Accepted: {acceptedTypes.join(", ")} · Max {maxFileSize}MB · Up to{" "}
-                        {maxFiles} files
+                        Accepted: {acceptedTypes.join(", ")} · Max {maxFileSize}MB · Up to {maxFiles} files
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <Button className="w-full bg-[#003087] hover:bg-[#002866] py-6 text-lg">
+                <button
+                  className="w-full py-3 rounded-md text-white font-medium text-lg transition-colors"
+                  style={{ backgroundColor: primaryColor }}
+                >
                   Submit
-                </Button>
+                </button>
               </div>
             </div>
-
-            {/* Form Appearance */}
-            <details className="bg-white rounded-lg p-4">
-              <summary className="font-semibold cursor-pointer flex items-center justify-between">
-                Form Appearance
-                <ChevronDown className="h-4 w-4" />
-              </summary>
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Primary Color</label>
-                  <input
-                    type="color"
-                    defaultValue="#003087"
-                    className="w-full h-10 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Font</label>
-                  <select className="w-full border rounded-md px-3 py-2">
-                    <option>System Default</option>
-                    <option>Georgia</option>
-                    <option>Lato</option>
-                    <option>Custom Google Font</option>
-                  </select>
-                </div>
-              </div>
-            </details>
           </div>
         </div>
       </div>
