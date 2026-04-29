@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, GripVertical, Lock, Plus, Eye, Monitor, Smartphone } from "lucide-react";
+import { X, GripVertical, Lock, Plus, Eye, Monitor, Smartphone, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -58,12 +58,14 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
       { id: "2", type: "email", label: "Submitter Email", required: true, locked: true, enabled: true },
       { id: "3", type: "text", label: "Title / Caption", required: false, enabled: true },
       { id: "4", type: "textarea", label: "Description", required: false, enabled: true },
-      { id: "5", type: "select", label: "Category", required: false, enabled: true },
+      { id: "5", type: "select", label: "Category", required: false, enabled: true, options: ["Research Events", "Faculty Resources", "Student Life", "Alumni Relations", "Campus Life"] },
       { id: "6", type: "text", label: "Department / School", required: false, enabled: false },
       { id: "7", type: "date", label: "Date of Media", required: false, enabled: false },
       { id: "8", type: "checkbox", label: "Usage Rights Agreement", required: false, enabled: false },
     ]),
   ]);
+
+  const [expandedFieldId, setExpandedFieldId] = useState<string | null>(null);
 
   const fileTypes = ["JPG", "PNG", "GIF", "MP4", "MOV", "AVI"];
 
@@ -87,15 +89,33 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
     setFields(fields.map((f) => (f.id === fieldId ? { ...f, required: !f.required } : f)));
   };
 
+  const addOption = (fieldId: string) => {
+    setFields(fields.map((f) =>
+      f.id === fieldId ? { ...f, options: [...(f.options ?? []), ""] } : f
+    ));
+  };
+
+  const updateOption = (fieldId: string, index: number, value: string) => {
+    setFields(fields.map((f) =>
+      f.id === fieldId
+        ? { ...f, options: f.options?.map((o: string, i: number) => (i === index ? value : o)) }
+        : f
+    ));
+  };
+
+  const removeOption = (fieldId: string, index: number) => {
+    setFields(fields.map((f) =>
+      f.id === fieldId
+        ? { ...f, options: f.options?.filter((_: string, i: number) => i !== index) }
+        : f
+    ));
+  };
+
   const statusConfig = {
     draft: { label: "Draft", className: "bg-gray-100 text-gray-700" },
     active: { label: "Active", className: "bg-green-100 text-green-700" },
     closed: { label: "Closed", className: "bg-red-100 text-red-700" },
   };
-
-  const headerBg = heroImageUrl
-    ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${heroImageUrl})`
-    : `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`;
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
@@ -206,43 +226,95 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
                   <h3 className="font-semibold mb-3">Form Fields</h3>
                   <div className="space-y-2">
                     {fields.map((field) => (
-                      <div
-                        key={field.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg border ${
-                          field.enabled !== false ? "bg-white" : "bg-gray-50 opacity-60"
-                        }`}
-                      >
-                        {field.locked ? (
-                          <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        ) : (
-                          <GripVertical className="h-4 w-4 text-muted-foreground cursor-move flex-shrink-0" />
-                        )}
-                        <Input
-                          value={field.label}
-                          onChange={(e) => updateFieldLabel(field.id, e.target.value)}
-                          className="h-8 flex-1 text-sm"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggleRequired(field.id)}
-                          className={`text-xs px-2 py-1 rounded border flex-shrink-0 ${
-                            field.required
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
-                              : "bg-gray-100 text-gray-600 border-gray-200"
+                      <div key={field.id} className="rounded-lg border overflow-hidden">
+                        {/* Field row */}
+                        <div
+                          className={`flex items-center gap-3 p-3 ${
+                            field.enabled !== false ? "bg-white" : "bg-gray-50 opacity-60"
                           }`}
                         >
-                          Req
-                        </button>
-                        {!field.locked && (
-                          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                            <input
-                              type="checkbox"
-                              checked={field.enabled}
-                              onChange={() => toggleField(field.id)}
-                              className="sr-only peer"
-                            />
-                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#003087]" />
-                          </label>
+                          {field.locked ? (
+                            <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          ) : (
+                            <GripVertical className="h-4 w-4 text-muted-foreground cursor-move flex-shrink-0" />
+                          )}
+                          <Input
+                            value={field.label}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFieldLabel(field.id, e.target.value)}
+                            className="h-8 flex-1 text-sm"
+                          />
+                          {field.type === "select" && field.enabled !== false && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedFieldId(expandedFieldId === field.id ? null : field.id)
+                              }
+                              className="flex-shrink-0 p-1 rounded hover:bg-gray-100 text-muted-foreground"
+                              title="Edit dropdown options"
+                            >
+                              {expandedFieldId === field.id ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => toggleRequired(field.id)}
+                            className={`text-xs px-2 py-1 rounded border flex-shrink-0 ${
+                              field.required
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : "bg-gray-100 text-gray-600 border-gray-200"
+                            }`}
+                          >
+                            Req
+                          </button>
+                          {!field.locked && (
+                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={field.enabled}
+                                onChange={() => toggleField(field.id)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#003087]" />
+                            </label>
+                          )}
+                        </div>
+
+                        {/* Inline option editor for select fields */}
+                        {field.type === "select" && expandedFieldId === field.id && (
+                          <div className="border-t bg-gray-50 p-3 space-y-2">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                              Dropdown Options
+                            </p>
+                            {(field.options ?? []).map((option: string, i: number) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <Input
+                                  value={option}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateOption(field.id, i, e.target.value)}
+                                  className="h-8 text-sm flex-1"
+                                  placeholder={`Option ${i + 1}`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeOption(field.id, i)}
+                                  className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 flex-shrink-0"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => addOption(field.id)}
+                              className="text-xs text-[#003087] hover:underline flex items-center gap-1 mt-1"
+                            >
+                              <Plus className="h-3 w-3" />
+                              Add option
+                            </button>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -614,7 +686,10 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
                         <textarea className="w-full border rounded-md px-3 py-2 min-h-[80px] bg-white" readOnly />
                       ) : field.type === "select" ? (
                         <select className="w-full border rounded-md px-3 py-2 bg-white" disabled>
-                          <option>Select an option</option>
+                          <option value="">Select an option</option>
+                          {(field.options ?? []).map((opt: string) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
                         </select>
                       ) : field.type === "checkbox" ? (
                         <div className="flex items-start gap-2">

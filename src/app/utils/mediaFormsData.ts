@@ -5,6 +5,7 @@ export interface FormField {
   required: boolean;
   locked?: boolean;
   enabled?: boolean;
+  options?: string[];
 }
 
 export interface MediaForm {
@@ -49,7 +50,7 @@ export const mediaForms: MediaForm[] = [
       { id: "2", type: "email", label: "Submitter Email", required: true, locked: true, enabled: true },
       { id: "3", type: "text", label: "Title / Caption", required: false, enabled: true },
       { id: "4", type: "textarea", label: "Description", required: false, enabled: true },
-      { id: "5", type: "select", label: "Category", required: false, enabled: true },
+      { id: "5", type: "select", label: "Category", required: false, enabled: true, options: ["Research Events", "Faculty Resources", "Student Life", "Alumni Relations", "Campus Life"] },
       { id: "6", type: "text", label: "Department / School", required: false, enabled: false },
       { id: "7", type: "date", label: "Date of Media", required: false, enabled: false },
       { id: "8", type: "checkbox", label: "Usage Rights Agreement", required: false, enabled: false },
