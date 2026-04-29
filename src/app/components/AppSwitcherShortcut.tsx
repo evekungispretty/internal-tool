@@ -1,4 +1,4 @@
-import { GraduationCap, User, Calendar, ImageIcon } from "lucide-react";
+import { GraduationCap, User, Calendar } from "lucide-react";
 
 interface AppSwitcherShortcutProps {
   onNavigate?: (viewId: string) => void;
@@ -9,7 +9,6 @@ export function AppSwitcherShortcut({ onNavigate }: AppSwitcherShortcutProps) {
     { id: "program-directory", icon: GraduationCap, name: "Program Directory" },
     { id: "faculty-directory", icon: User, name: "Faculty Directory", disabled: true },
     { id: "events-manager", icon: Calendar, name: "Events Manager", disabled: true },
-    { id: "media-library", icon: ImageIcon, name: "Media Submission", disabled: false },
   ];
 
   return (
@@ -23,8 +22,8 @@ export function AppSwitcherShortcut({ onNavigate }: AppSwitcherShortcutProps) {
               key={app.id}
               disabled={app.disabled}
               onClick={() => {
-                if (!app.disabled && app.id === "media-library" && onNavigate) {
-                  onNavigate("media-library");
+                if (!app.disabled && onNavigate) {
+                  onNavigate(app.id);
                 }
               }}
               className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${

@@ -1,4 +1,4 @@
-import { Network, GraduationCap, User, Calendar, ImageIcon, ArrowRight } from "lucide-react";
+import { Network, GraduationCap, User, Calendar, ArrowRight } from "lucide-react";
 
 interface AppSwitcherProps {
   onClose: () => void;
@@ -47,14 +47,6 @@ const apps: App[] = [
     isActive: false,
     isComingSoon: true,
   },
-  {
-    id: "media-library",
-    name: "Media Submission",
-    icon: ImageIcon,
-    subtitle: "Collect media from your community",
-    isActive: false,
-    isComingSoon: false,
-  },
 ];
 
 export function AppSwitcher({ onClose, onNavigate }: AppSwitcherProps) {
@@ -79,8 +71,8 @@ export function AppSwitcher({ onClose, onNavigate }: AppSwitcherProps) {
                   key={app.id}
                   disabled={app.isComingSoon}
                   onClick={() => {
-                    if (!app.isComingSoon && app.id === "media-library" && onNavigate) {
-                      onNavigate("media-library");
+                    if (!app.isComingSoon && onNavigate) {
+                      onNavigate(app.id);
                       onClose();
                     }
                   }}

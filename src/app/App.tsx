@@ -18,6 +18,7 @@ import {
   BookOpen,
   CheckCircle2,
   ImageIcon,
+  GraduationCap,
 } from "lucide-react";
 import {
   Sidebar,
@@ -52,6 +53,7 @@ import { SuiteTopBar } from "./components/SuiteTopBar";
 import { AppSwitcherShortcut } from "./components/AppSwitcherShortcut";
 import { SuiteLandingPage } from "./components/SuiteLandingPage";
 import { MediaLibrary } from "./components/MediaLibrary";
+import { ProgramDirectoryTool } from "./components/ProgramDirectoryTool";
 
 const navigationItems = [
   {
@@ -96,6 +98,7 @@ const navigationItems = [
     title: "Tools",
     items: [
       { title: "Media Submission", icon: ImageIcon, id: "media-library" },
+      { title: "Program Directory", icon: GraduationCap, id: "program-directory" },
       { title: "Performance", icon: Zap, id: "performance" },
       { title: "Documentation", icon: BookOpen, id: "docs" },
       { title: "Integrations", icon: Plug, id: "integrations" },
@@ -133,6 +136,8 @@ export default function App() {
         return "Themes & Plugins";
       case "media-library":
         return "Media Submission";
+      case "program-directory":
+        return "Program Directory";
       default:
         return "";
     }
@@ -277,6 +282,8 @@ export default function App() {
         return <SEOHealth />;
       case "media-library":
         return <MediaLibrary />;
+      case "program-directory":
+        return <ProgramDirectoryTool />;
       default:
         return (
           <div className="flex h-[50vh] items-center justify-center">
